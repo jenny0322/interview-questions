@@ -1,0 +1,29 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.validatebrackets</groupId>
+  <artifactId>validate-brackets</artifactId>
+  <version>1.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version> <!-- Updated to a newer version -->
+        <configuration>
+          <source>1.8</source> <!-- Set Java version for source compatibility -->
+          <target>1.8</target> <!-- Set Java version for target compatibility -->
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+
