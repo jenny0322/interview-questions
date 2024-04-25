@@ -1,24 +1,23 @@
 ﻿using System;
-using System.Collections;
+using System.Collections.Generic;
 
 
 namespace TwoSumLib 
 {
     public class Solution {
-        public int[] TwoSum(int[] nums, int target) {        
-            Hashtable ht = new Hashtable();
-            
-            for (int i = 0; i < nums.Length; i++) 
-            {
-                int compliment = target - nums[i];
-                if (ht.ContainsKey(compliment))
-                {
-                    int index = (int)ht[compliment];
-                    return new int[]{i, index};
+        public int[] TwoSum(int[] nums, int target) {
+            Dictionary<int, int> numMap = new Dictionary<int, int>();
+
+            for (int i = 0; i < nums.Length; i++) {
+                int complement = target - nums[i];
+                if (numMap.ContainsKey(complement)) {
+                    return new int[] { numMap[complement], i };
                 }
-                ht.Add(nums[i], i);
+                if (!numMap.ContainsKey(nums[i])) {
+                    numMap.Add(nums[i], i);
+                }
             }
-            
+
             throw new ArgumentException("No two sum solution");
         }
     }
