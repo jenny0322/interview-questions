@@ -15,21 +15,21 @@ jobs:
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA...$HEAD_SHA | grep '^src/')
+          # Diff HEAD with the previous commit
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
-            echo "::set-output name=problem::"
-            echo "::set-output name=language::"
+            echo "problem=none" >> $GITHUB_ENV
+            echo "language=none" >> $GITHUB_ENV
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\///' | uniq)
             LANGUAGE=$(echo "$CHANGED_FILES" | grep -o '[^/]*/[^/]*/$' | sed 's/\///g' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
-            echo "::set-output name=problem::$PROBLEM"
-            echo "::set-output name=language::$LANGUAGE"
+            echo "problem=$PROBLEM" >> $GITHUB_ENV
+            echo "language=$LANGUAGE" >> $GITHUB_ENV
           fi
+      
       
       - name: Set up .NET Core
         if: steps.problem-language.outputs.language == 'csharp' && steps.problem-language.outputs.problem
