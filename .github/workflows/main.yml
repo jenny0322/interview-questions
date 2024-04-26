@@ -27,7 +27,6 @@ jobs:
         id: problem-language
         run: |
           echo "Determining changed files..."
-          # Determine if it's a pull request or push
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/')
           else
@@ -35,21 +34,22 @@ jobs:
           fi
           echo "Changed Files: $CHANGED_FILES"
           
-          if [[ -z "$CHANGED_FILES" ]]; then
-            echo "No src files changed."
-            echo "problem=none" >> $GITHUB_ENV
-            echo "language=none" >> $GITHUB_ENV
-          else
-            PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
-            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
-            echo "Detected Problem: $PROBLEM"
-            echo "Detected Language: $LANGUAGE"
-
-            # Make sure to quote the value if it can contain spaces
-            echo "problem='${PROBLEM}'" >> $GITHUB_ENV
-            echo "language='${LANGUAGE}'" >> $GITHUB_ENV
-
+          PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
+          if echo "$CHANGED_FILES" | grep -q 'src/[^/]*/golang/'; then
+            LANGUAGE='golang'
+          elif echo "$CHANGED_FILES" | grep -q 'src/[^/]*/java/'; then
+            LANGUAGE='java'
+          elif echo "$CHANGED_FILES" | grep -q 'src/[^/]*/csharp/'; then
+            LANGUAGE='csharp'
+          elif echo "$CHANGED_FILES" | grep -q 'src/[^/]*/node/'; then
+            LANGUAGE='node'
+          elif echo "$CHANGED_FILES" | grep -q 'src/[^/]*/python/'; then
+            LANGUAGE='python'
           fi
+          echo "Detected Problem: $PROBLEM"
+          echo "Detected Language: $LANGUAGE"
+          echo "problem=$PROBLEM" >> $GITHUB_ENV
+          echo "language=$LANGUAGE" >> $GITHUB_ENV
         
 
       - name: Set up .NET Core
