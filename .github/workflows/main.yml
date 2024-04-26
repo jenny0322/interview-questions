@@ -1,10 +1,9 @@
 name: Conditional Test Runner
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
+    branches:
+      - main
     types: [opened, synchronize, reopened]
     paths:
       - 'src/**'
@@ -13,35 +12,33 @@ on:
 jobs:
   setup-and-test:
     runs-on: ubuntu-latest
-    outputs:
-      problem: ${{ steps.set-vars.outputs.problem }}
-      language: ${{ steps.set-vars.outputs.language }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2 # fetch enough to see the last commit before the PR's changes
+          fetch-depth: 0 # fetch enough to see the last commit before the PR's changes
 
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          # Fetch the base branch
-          git fetch --no-tags --prune --depth=1 origin ${GITHUB_BASE_REF}
-          
-          # List changed files in the src/ directory
-          CHANGED_FILES=$(git diff --name-only origin/${GITHUB_BASE_REF}...${GITHUB_HEAD_REF} | grep '^src/')
-          echo "Changed Files: $CHANGED_FILES"
+          echo "Fetching base and head refs..."
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.head_ref }}:refs/remotes/origin/${{ github.head_ref }}
 
+          echo "Determining changed files..."
+          CHANGED_FILES=$(git diff --name-only refs/remotes/origin/${{ github.base_ref }} refs/remotes/origin/${{ github.head_ref }} | grep '^src/')
+          echo "Changed Files: $CHANGED_FILES"
+          
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
-            echo "::set-output name=problem::none"
-            echo "::set-output name=language::none"
+            echo "problem=none" >> $GITHUB_ENV
+            echo "language=none" >> $GITHUB_ENV
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
-            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
+            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//')
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
-            echo "::set-output name=problem::$PROBLEM"
-            echo "::set-output name=language::$LANGUAGE"
+            echo "problem=$PROBLEM" >> $GITHUB_ENV
+            echo "language=$LANGUAGE" >> $GITHUB_ENV
           fi
 
       - name: Set up .NET Core
