@@ -23,21 +23,24 @@ jobs:
           fetch-depth: 0
 
       - name: Determine Problem and Language
-        id: set-vars
+        id: problem-language
         run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/')
+          # Fetch main explicitly to ensure it's available for comparison
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
-            echo "problem=none" >> $GITHUB_ENV
-            echo "language=none" >> $GITHUB_ENV
+            echo "::set-output name=problem::none"
+            echo "::set-output name=language::none"
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
             LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
-            echo "problem=$PROBLEM" >> $GITHUB_ENV
-            echo "language=$LANGUAGE" >> $GITHUB_ENV
+            echo "::set-output name=problem::$PROBLEM"
+            echo "::set-output name=language::$LANGUAGE"
           fi
+        
 
       - name: Set up .NET Core
         if: env.language == 'csharp' && env.problem != 'none'
