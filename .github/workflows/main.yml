@@ -32,7 +32,7 @@ jobs:
       
           echo "Determining changed files..."
           # Compare the branches
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...origin/${{ github.head_ref }} | grep '^src/')
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           
           if [[ -z "$CHANGED_FILES" ]]; then
