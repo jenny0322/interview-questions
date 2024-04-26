@@ -36,13 +36,13 @@ jobs:
         if: steps.problem-language.outputs.language == 'csharp' && steps.problem-language.outputs.problem
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '3.1.x' # specify your dotnet version
+          dotnet-version: '8.0.100' # specify your dotnet version
 
       - name: Set up Go
         if: steps.problem-language.outputs.language == 'golang' && steps.problem-language.outputs.problem
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16' # specify your Go version
+          go-version: '1.19' # specify your Go version
 
       - name: Set up Java
         if: steps.problem-language.outputs.language == 'java' && steps.problem-language.outputs.problem
