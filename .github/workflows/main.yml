@@ -42,10 +42,13 @@ jobs:
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
             LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
-            echo "Problem: $PROBLEM, Language: $LANGUAGE"
+            echo "Detected Problem: $PROBLEM"
+            echo "Detected Language: $LANGUAGE"
+
             # Make sure to quote the value if it can contain spaces
-            echo "problem=$PROBLEM" >> $GITHUB_ENV
-            echo "language=$LANGUAGE" >> $GITHUB_ENV
+            echo "problem='${PROBLEM}'" >> $GITHUB_ENV
+            echo "language='${LANGUAGE}'" >> $GITHUB_ENV
+
           fi
         
 
@@ -86,8 +89,8 @@ jobs:
       - name: Run Go Tests
         if: env.language == 'golang' && env.problem != 'none'
         run: |
-          cd src/${{ env.problem }}/golang/src/solution
-          go test -v
+          cd src/${{ env.problem }}/golang
+          go test ./src/solution -v
       
       - name: Run Java Tests
         if: env.language == 'java' && env.problem != 'none'
