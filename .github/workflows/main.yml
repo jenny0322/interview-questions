@@ -2,9 +2,10 @@ name: Conditional Test Runner
 
 on:
   pull_request:
+    types:
+      - closed
     branches:
       - main
-    types: [opened, synchronize, reopened]
     paths:
       - 'src/**'
   workflow_dispatch:
@@ -24,9 +25,10 @@ jobs:
           echo "Fetching base and head refs..."
           git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
           git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.head_ref }}:refs/remotes/origin/${{ github.head_ref }}
-
+      
           echo "Determining changed files..."
-          CHANGED_FILES=$(git diff --name-only refs/remotes/origin/${{ github.base_ref }} refs/remotes/origin/${{ github.head_ref }} | grep '^src/')
+          # Compare the branches
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...origin/${{ github.head_ref }} | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           
           if [[ -z "$CHANGED_FILES" ]]; then
@@ -35,7 +37,7 @@ jobs:
             echo "language=none" >> $GITHUB_ENV
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
-            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//')
+            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
             echo "problem=$PROBLEM" >> $GITHUB_ENV
             echo "language=$LANGUAGE" >> $GITHUB_ENV
