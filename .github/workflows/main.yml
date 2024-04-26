@@ -1,0 +1,71 @@
+name: Run Language Specific Tests
+
+on: 
+  pull_request:
+    paths:
+      - 'src/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - language: 'csharp'
+            path: 'src/**/csharp/**'
+            command: dotnet test
+          - language: 'java'
+            path: 'src/**/java/**'
+            command: mvn test
+          - language: 'python'
+            path: 'src/**/python/**'
+            command: pytest
+          - language: 'node'
+            path: 'src/**/node/**'
+            command: npm test
+          - language: 'golang'
+            path: 'src/**/golang/**'
+            command: go test ./...
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up JDK 1.8
+      if: contains(matrix.language, 'java')
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Set up Python
+      if: contains(matrix.language, 'python')
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Set up Node.js
+      if: contains(matrix.language, 'node')
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Set up .NET Core
+      if: contains(matrix.language, 'csharp')
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.301'
+
+    - name: Set up Go
+      if: contains(matrix.language, 'golang')
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.14'
+
+    - name: Install dependencies
+      if: contains(matrix.language, 'node')
+      run: npm install
+      working-directory: ${{ github.workspace }}/src/**/node
+
+    - name: Run Tests
+      run: ${{ matrix.command }}
+      working-directory: ${{ github.workspace }}/${{ matrix.path }}
