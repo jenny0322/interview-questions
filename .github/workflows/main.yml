@@ -6,7 +6,7 @@ on:
       - 'src/**'
 
 jobs:
-  run-conditional-tests:
+  setup-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -16,59 +16,59 @@ jobs:
         id: problem-language
         run: |
           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/')
-          PROBLEM=$(echo "$CHANGED_FILES" | cut -d'/' -f2 | uniq)
-          LANGUAGE=$(echo "$CHANGED_FILES" | cut -d'/' -f3 | uniq)
+          echo "Changed Files: $CHANGED_FILES"
+          PROBLEM=$(echo "$CHANGED_FILES" | awk -F '/' '{print $2}' | head -n 1)
+          LANGUAGE=$(echo "$CHANGED_FILES" | awk -F '/' '{print $3}' | head -n 1)
+          echo "Problem: $PROBLEM, Language: $LANGUAGE"
           echo "::set-output name=problem::$PROBLEM"
           echo "::set-output name=language::$LANGUAGE"
-          echo "Changed Problem: $PROBLEM"
-          echo "Changed Language: $LANGUAGE"
 
       - name: Set up .NET Core
-        if: steps.problem-language.outputs.language == 'csharp'
+        if: contains(steps.problem-language.outputs.language, 'csharp')
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '3.1.x'
+          dotnet-version: '3.1.x' # specify your dotnet version
 
       - name: Set up Go
-        if: steps.problem-language.outputs.language == 'golang'
+        if: contains(steps.problem-language.outputs.language, 'golang')
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16'
+          go-version: '1.16' # specify your Go version
 
       - name: Set up Java
-        if: steps.problem-language.outputs.language == 'java'
+        if: contains(steps.problem-language.outputs.language, 'java')
         uses: actions/setup-java@v1
         with:
-          java-version: '11'
+          java-version: '11' # specify your Java version
 
       - name: Set up Node.js
-        if: steps.problem-language.outputs.language == 'node'
+        if: contains(steps.problem-language.outputs.language, 'node')
         uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: '14' # specify your Node.js version
 
       - name: Set up Python
-        if: steps.problem-language.outputs.language == 'python'
+        if: contains(steps.problem-language.outputs.language, 'python')
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.8' # specify your Python version
 
       - name: Install dependencies and run .NET tests
-        if: steps.problem-language.outputs.language == 'csharp'
+        if: contains(steps.problem-language.outputs.language, 'csharp')
         run: dotnet test src/${{ steps.problem-language.outputs.problem }}/csharp/
 
       - name: Install dependencies and run Go tests
-        if: steps.problem-language.outputs.language == 'golang'
+        if: contains(steps.problem-language.outputs.language, 'golang')
         run: go test src/${{ steps.problem-language.outputs.problem }}/golang/...
 
       - name: Install dependencies and run Java tests
-        if: steps.problem-language.outputs.language == 'java'
+        if: contains(steps.problem-language.outputs.language, 'java')
         run: mvn -f src/${{ steps.problem-language.outputs.problem }}/java/pom.xml test
 
       - name: Install dependencies and run Node.js tests
-        if: steps.problem-language.outputs.language == 'node'
+        if: contains(steps.problem-language.outputs.language, 'node')
         run: npm install && npm test --prefix src/${{ steps.problem-language.outputs.problem }}/node/
 
       - name: Install dependencies and run Python tests
-        if: steps.problem-language.outputs.language == 'python'
+        if: contains(steps.problem-language.outputs.language, 'python')
         run: pip install -r src/${{ steps.problem-language.outputs.problem }}/python/requirements.txt && pytest src/${{ steps.problem-language.outputs.problem }}/python/
