@@ -20,17 +20,18 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 2 # fetch enough to see the last commit before the PR's changes
 
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          # Fetch the latest commits from the main branch
-          git fetch --no-tags --prune --depth=1 origin +refs/heads/main:refs/remotes/origin/main
-      
-          # Compare the fetched main branch to the HEAD of the PR
-          CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^src/')
+          # Fetch the base branch
+          git fetch --no-tags --prune --depth=1 origin ${GITHUB_BASE_REF}
+          
+          # List changed files in the src/ directory
+          CHANGED_FILES=$(git diff --name-only origin/${GITHUB_BASE_REF}...${GITHUB_HEAD_REF} | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
+
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
             echo "::set-output name=problem::none"
@@ -42,10 +43,6 @@ jobs:
             echo "::set-output name=problem::$PROBLEM"
             echo "::set-output name=language::$LANGUAGE"
           fi
-        
-        
-        
-        
 
       - name: Set up .NET Core
         if: env.language == 'csharp' && env.problem != 'none'
