@@ -5,14 +5,17 @@ on:
     branches:
       - '**'
   pull_request:
+    types: [opened, synchronize, reopened]
     paths:
       - 'src/**'
   workflow_dispatch:
-  
 
 jobs:
   setup-and-test:
     runs-on: ubuntu-latest
+    outputs:
+      problem: ${{ steps.set-vars.outputs.problem }}
+      language: ${{ steps.set-vars.outputs.language }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
@@ -20,69 +23,68 @@ jobs:
           fetch-depth: 0
 
       - name: Determine Problem and Language
-        id: problem-language
+        id: set-vars
         run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/')
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
-            echo "::set-output name=problem::none"
-            echo "::set-output name=language::none"
+            echo "problem=none" >> $GITHUB_ENV
+            echo "language=none" >> $GITHUB_ENV
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
             LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
-            echo "::set-output name=problem::$PROBLEM"
-            echo "::set-output name=language::$LANGUAGE"
+            echo "problem=$PROBLEM" >> $GITHUB_ENV
+            echo "language=$LANGUAGE" >> $GITHUB_ENV
           fi
-        
-      
+
       - name: Set up .NET Core
-        if: steps.problem-language.outputs.language == 'csharp' && steps.problem-language.outputs.problem
+        if: env.language == 'csharp' && env.problem != 'none'
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '8.0.100' # specify your dotnet version
+          dotnet-version: '8.0.100'
 
       - name: Set up Go
-        if: steps.problem-language.outputs.language == 'golang' && steps.problem-language.outputs.problem
+        if: env.language == 'golang' && env.problem != 'none'
         uses: actions/setup-go@v2
         with:
-          go-version: '1.19' # specify your Go version
+          go-version: '1.19'
 
       - name: Set up Java
-        if: steps.problem-language.outputs.language == 'java' && steps.problem-language.outputs.problem
+        if: env.language == 'java' && env.problem != 'none'
         uses: actions/setup-java@v1
         with:
-          java-version: '11' # specify your Java version
+          java-version: '11'
 
       - name: Set up Node.js
-        if: steps.problem-language.outputs.language == 'node' && steps.problem-language.outputs.problem
+        if: env.language == 'node' && env.problem != 'none'
         uses: actions/setup-node@v2
         with:
-          node-version: '14' # specify your Node.js version
+          node-version: '14'
 
       - name: Set up Python
-        if: steps.problem-language.outputs.language == 'python' && steps.problem-language.outputs.problem
+        if: env.language == 'python' && env.problem != 'none'
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8' # specify your Python version
+          python-version: '3.8'
 
       - name: Run .NET Tests
-        if: steps.problem-language.outputs.language == 'csharp' && steps.problem-language.outputs.problem
-        run: dotnet test src/${{ steps.problem-language.outputs.problem }}/csharp/
+        if: env.language == 'csharp' && env.problem != 'none'
+        run: dotnet test src/${{ env.problem }}/csharp/
 
       - name: Run Go Tests
-        if: steps.problem-language.outputs.language == 'golang' && steps.problem-language.outputs.problem
-        run: go test src/${{ steps.problem-language.outputs.problem }}/golang/...
+        if: env.language == 'golang' && env.problem != 'none'
+        run: go test src/${{ env.problem }}/golang/...
 
       - name: Run Java Tests
-        if: steps.problem-language.outputs.language == 'java' && steps.problem-language.outputs.problem
-        run: mvn -f src/${{ steps.problem-language.outputs.problem }}/java/pom.xml test
+        if: env.language == 'java' && env.problem != 'none'
+        run: mvn -f src/${{ env.problem }}/java/pom.xml test
 
       - name: Run Node.js Tests
-        if: steps.problem-language.outputs.language == 'node' && steps.problem-language.outputs.problem
-        run: npm install && npm test --prefix src/${{ steps.problem-language.outputs.problem }}/node/
+        if: env.language == 'node' && env.problem != 'none'
+        run: npm install && npm test --prefix src/${{ env.problem }}/node/
 
       - name: Run Python Tests
-        if: steps.problem-language.outputs.language == 'python' && steps.problem-language.outputs.problem
-        run: pip install -r src/${{ steps.problem-language.outputs.problem }}/python/requirements.txt && pytest src/${{ steps.problem-language.outputs.problem }}/python/
+        if: env.language == 'python' && env.problem != 'none'
+        run: pip install -r src/${{ env.problem }}/python/requirements.txt && pytest src/${{ env.problem }}/python/
