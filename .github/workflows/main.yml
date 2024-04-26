@@ -10,26 +10,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: '100'
 
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          # Diff HEAD with the previous commit
-          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '^src/')
+          # Assuming that the last commit to the PR is the HEAD of the PR branch
+          # and using git diff with the base branch of the PR
+          CHANGED_FILES=$(git diff --name-only ${{ github.base_ref }} | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
-            echo "problem=none" >> $GITHUB_ENV
-            echo "language=none" >> $GITHUB_ENV
+            echo "::set-output name=problem::none"
+            echo "::set-output name=language::none"
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\///' | uniq)
             LANGUAGE=$(echo "$CHANGED_FILES" | grep -o '[^/]*/[^/]*/$' | sed 's/\///g' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
-            echo "problem=$PROBLEM" >> $GITHUB_ENV
-            echo "language=$LANGUAGE" >> $GITHUB_ENV
+            echo "::set-output name=problem::$PROBLEM"
+            echo "::set-output name=language::$LANGUAGE"
           fi
-      
       
       - name: Set up .NET Core
         if: steps.problem-language.outputs.language == 'csharp' && steps.problem-language.outputs.problem
