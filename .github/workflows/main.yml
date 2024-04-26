@@ -104,7 +104,11 @@ jobs:
 
       - name: Run Node.js Tests
         if: env.language == 'node' && env.problem != 'none'
-        run: npm install && npm test --prefix src/${{ env.problem }}/node/
+        working-directory: src/${{ env.problem }}/node/
+        run: |
+          npm install
+          npm test
+      
 
       - name: Run Python Tests
         if: env.language == 'python' && env.problem != 'none'
