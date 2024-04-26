@@ -27,7 +27,8 @@ jobs:
         id: problem-language
         run: |
           echo "Determining changed files..."
-          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+          # Determine if it's a pull request or push
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/')
           else
             CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '^src/')
@@ -42,9 +43,11 @@ jobs:
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
             LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
+            # Make sure to quote the value if it can contain spaces
             echo "problem=$PROBLEM" >> $GITHUB_ENV
             echo "language=$LANGUAGE" >> $GITHUB_ENV
           fi
+        
 
       - name: Set up .NET Core
         if: env.language == 'csharp' && env.problem != 'none'
@@ -82,8 +85,10 @@ jobs:
 
       - name: Run Go Tests
         if: env.language == 'golang' && env.problem != 'none'
-        run: go test src/${{ env.problem }}/golang/...
-
+        run: |
+          cd src/${{ env.problem }}/golang/src/solution
+          go test -v
+      
       - name: Run Java Tests
         if: env.language == 'java' && env.problem != 'none'
         run: mvn -f src/${{ env.problem }}/java/pom.xml test
