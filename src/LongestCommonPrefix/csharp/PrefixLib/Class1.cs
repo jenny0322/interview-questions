@@ -7,7 +7,8 @@ namespace PrefixLib
     {
         public string LongestCommonPrefix(string[] strs) 
         {
-            return VerticalScanning(strs);
+            //return VerticalScanning(strs);
+            return "zzz";
         }
     
         public string HorozontalScanning(string[] strs)
