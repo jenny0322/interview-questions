@@ -7,8 +7,7 @@ on:
     paths:
       - 'src/**'
   pull_request:
-    types:
-      - closed
+    types: [opened, synchronize, reopened, closed]
     branches:
       - main
     paths:
