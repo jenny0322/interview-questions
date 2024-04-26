@@ -109,7 +109,9 @@ jobs:
           npm install
           npm test
       
-
       - name: Run Python Tests
         if: env.language == 'python' && env.problem != 'none'
-        run: pip install -r src/${{ env.problem }}/python/requirements.txt && pytest src/${{ env.problem }}/python/
+        run: |
+          pip install pytest
+          pytest src/${{ env.problem }}/python/
+        
