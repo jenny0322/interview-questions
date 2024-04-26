@@ -1,6 +1,11 @@
 name: Conditional Test Runner
 
 on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'src/**'
   pull_request:
     types:
       - closed
