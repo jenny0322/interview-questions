@@ -25,8 +25,10 @@ jobs:
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          # Fetch main explicitly to ensure it's available for comparison
-          git fetch --no-tags --prune --depth=1 origin main
+          # Fetch the latest commits from the main branch
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+      
+          # Compare the fetched main branch to the HEAD of the PR
           CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           if [[ -z "$CHANGED_FILES" ]]; then
@@ -40,6 +42,7 @@ jobs:
             echo "::set-output name=problem::$PROBLEM"
             echo "::set-output name=language::$LANGUAGE"
           fi
+        
         
         
 
