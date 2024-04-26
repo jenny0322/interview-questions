@@ -8,84 +8,67 @@ on:
 jobs:
   run-conditional-tests:
     runs-on: ubuntu-latest
-
-    outputs:
-      problem-path: ${{ steps.find-problem.outputs.problem-path }}
-      language: ${{ steps.find-language.outputs.language }}
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-      
-      - name: Find Problem
-        id: find-problem
-        run: |
-          PROBLEM_PATH=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/' | awk -F/ '/' '{print $2}' | uniq)
-          echo "::set-output name=problem-path::src/$PROBLEM_PATH"
 
-      - name: Find Language
-        id: find-language
+      - name: Determine Problem and Language
+        id: problem-language
         run: |
-          LANGUAGE=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/' | awk -F/ '/' '{print $3}' | uniq)
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/')
+          PROBLEM=$(echo "$CHANGED_FILES" | cut -d'/' -f2 | uniq)
+          LANGUAGE=$(echo "$CHANGED_FILES" | cut -d'/' -f3 | uniq)
+          echo "::set-output name=problem::$PROBLEM"
           echo "::set-output name=language::$LANGUAGE"
-
-  setup-and-test:
-    needs: run-conditional-tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        language: [csharp, golang, java, node, python]
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+          echo "Changed Problem: $PROBLEM"
+          echo "Changed Language: $LANGUAGE"
 
       - name: Set up .NET Core
-        if: needs.run-conditional-tests.outputs.language == 'csharp'
+        if: steps.problem-language.outputs.language == 'csharp'
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '3.1.x' # specify your dotnet version
+          dotnet-version: '3.1.x'
 
       - name: Set up Go
-        if: needs.run-conditional-tests.outputs.language == 'golang'
+        if: steps.problem-language.outputs.language == 'golang'
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16' # specify your Go version
+          go-version: '1.16'
 
       - name: Set up Java
-        if: needs.run-conditional-tests.outputs.language == 'java'
+        if: steps.problem-language.outputs.language == 'java'
         uses: actions/setup-java@v1
         with:
-          java-version: '11' # specify your Java version
+          java-version: '11'
 
       - name: Set up Node.js
-        if: needs.run-conditional-tests.outputs.language == 'node'
+        if: steps.problem-language.outputs.language == 'node'
         uses: actions/setup-node@v2
         with:
-          node-version: '14' # specify your Node.js version
+          node-version: '14'
 
       - name: Set up Python
-        if: needs.run-conditional-tests.outputs.language == 'python'
+        if: steps.problem-language.outputs.language == 'python'
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8' # specify your Python version
+          python-version: '3.8'
 
       - name: Install dependencies and run .NET tests
-        if: needs.run-conditional-tests.outputs.language == 'csharp'
-        run: dotnet test ${{ needs.run-conditional-tests.outputs.problem-path }}/csharp/
+        if: steps.problem-language.outputs.language == 'csharp'
+        run: dotnet test src/${{ steps.problem-language.outputs.problem }}/csharp/
 
       - name: Install dependencies and run Go tests
-        if: needs.run-conditional-tests.outputs.language == 'golang'
-        run: go test ${{ needs.run-conditional-tests.outputs.problem-path }}/golang/...
+        if: steps.problem-language.outputs.language == 'golang'
+        run: go test src/${{ steps.problem-language.outputs.problem }}/golang/...
 
       - name: Install dependencies and run Java tests
-        if: needs.run-conditional-tests.outputs.language == 'java'
-        run: mvn -f ${{ needs.run-conditional-tests.outputs.problem-path }}/java/pom.xml test
+        if: steps.problem-language.outputs.language == 'java'
+        run: mvn -f src/${{ steps.problem-language.outputs.problem }}/java/pom.xml test
 
       - name: Install dependencies and run Node.js tests
-        if: needs.run-conditional-tests.outputs.language == 'node'
-        run: npm install && npm test --prefix ${{ needs.run-conditional-tests.outputs.problem-path }}/node/
+        if: steps.problem-language.outputs.language == 'node'
+        run: npm install && npm test --prefix src/${{ steps.problem-language.outputs.problem }}/node/
 
       - name: Install dependencies and run Python tests
-        if: needs.run-conditional-tests.outputs.language == 'python'
-        run: pip install -r ${{ needs.run-conditional-tests.outputs.problem-path }}/python/requirements.txt && pytest ${{ needs.run-conditional-tests.outputs.problem-path }}/python/
+        if: steps.problem-language.outputs.language == 'python'
+        run: pip install -r src/${{ steps.problem-language.outputs.problem }}/python/requirements.txt && pytest src/${{ steps.problem-language.outputs.problem }}/python/
