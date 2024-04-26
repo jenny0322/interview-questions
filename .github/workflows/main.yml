@@ -12,25 +12,23 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: '100'
+          fetch-depth: 0
 
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          # Assuming that the last commit to the PR is the HEAD of the PR branch
-          # and using git diff with the base branch of the PR
-          CHANGED_FILES=$(git diff --name-only ${{ github.base_ref }} | grep '^src/')
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/')
           echo "Changed Files: $CHANGED_FILES"
           if [[ -z "$CHANGED_FILES" ]]; then
             echo "No src files changed."
-            echo "::set-output name=problem::none"
-            echo "::set-output name=language::none"
+            echo "problem=none" >> $GITHUB_ENV
+            echo "language=none" >> $GITHUB_ENV
           else
             PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\///' | uniq)
-            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o '[^/]*/[^/]*/$' | sed 's/\///g' | uniq)
+            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*/' | sed 's/\///g' | uniq)
             echo "Problem: $PROBLEM, Language: $LANGUAGE"
-            echo "::set-output name=problem::$PROBLEM"
-            echo "::set-output name=language::$LANGUAGE"
+            echo "problem=$PROBLEM" >> $GITHUB_ENV
+            echo "language=$LANGUAGE" >> $GITHUB_ENV
           fi
       
       - name: Set up .NET Core
