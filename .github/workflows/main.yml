@@ -2,8 +2,8 @@ name: Conditional Test Runner
 
 on:
   push:
-    branches:
-      - '**'
+    branches-ignore:
+      - main
     paths:
       - 'src/**'
   pull_request:
@@ -26,13 +26,12 @@ jobs:
       - name: Determine Problem and Language
         id: problem-language
         run: |
-          echo "Fetching base and head refs..."
-          git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
-          git fetch --no-tags --prune --depth=1 origin +refs/heads/${{ github.head_ref }}:refs/remotes/origin/${{ github.head_ref }}
-      
           echo "Determining changed files..."
-          # Compare the branches
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep '^src/')
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/')
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '^src/')
+          fi
           echo "Changed Files: $CHANGED_FILES"
           
           if [[ -z "$CHANGED_FILES" ]]; then
