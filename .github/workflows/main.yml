@@ -27,6 +27,7 @@ jobs:
         id: problem-language
         run: |
           echo "Determining changed files..."
+          # Determine if it's a pull request or push
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '^src/')
           else
@@ -39,23 +40,24 @@ jobs:
             echo "problem=none" >> $GITHUB_ENV
             echo "language=none" >> $GITHUB_ENV
           else
-            PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///' | sed 's/\/.*//')
+            # Extract the problem name, which is the directory name immediately following the first 'src/'
+            PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | head -1 | cut -d'/' -f2)
+            # Extract the language from the path
+            LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | cut -d'/' -f3 | uniq)
+      
+            # Ensure the LANGUAGE is correctly determined for golang where 'src/' occurs twice in the path
             if [[ "$CHANGED_FILES" == *"/golang/"* ]]; then
               LANGUAGE="golang"
-              # For Go, strip out the extra src and only take the problem name
-              PROBLEM=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/' | sed 's/src\///')
-            else
-              LANGUAGE=$(echo "$CHANGED_FILES" | grep -o 'src/[^/]*/[^/]*' | sed 's/src\/[^/]*\///' | sed 's/\/.*//')
             fi
+      
             echo "Detected Problem: $PROBLEM"
             echo "Detected Language: $LANGUAGE"
-            # Use the environment file to set the variable correctly
-            echo "problem='${PROBLEM}'" >> $GITHUB_ENV
-            echo "language='${LANGUAGE}'" >> $GITHUB_ENV
+      
+            # Properly format and output the environment variables
+            echo "problem=$PROBLEM" >> $GITHUB_ENV
+            echo "language=$LANGUAGE" >> $GITHUB_ENV
           fi
         
-        
-
       - name: Set up .NET Core
         if: env.language == 'csharp' && env.problem != 'none'
         uses: actions/setup-dotnet@v1
